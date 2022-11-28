@@ -171,7 +171,6 @@ def get_thread_contents(threads):
         sys.stdout.write("\n")
         sys.stdout.flush()
         sleep(1.01)
-        
 
         for j, post in enumerate(data["posts"]):
             if not j:
@@ -181,15 +180,14 @@ def get_thread_contents(threads):
                 )
             try:
                 url = f"https://i.4cdn.org/{sys.argv[1]}/{post['tim']}{post['ext']}"
-                name = f"{post['filename']}{post['ext']}"
+                name = post['filename'] + post['ext']
                 if os.path.exists(name):
                     print(f"{name} already exists! skipping.")
                     continue
-                size = int(post['fsize'])
+                size = int(post["fsize"])
                 req = requests.get(url)
                 # download_img()
                 dwnl = 0
-
                 with open(name, "xb") as fi:
                     for chunk in req.iter_content(chunk_size=4096):
                         # sys.stdout.write(f"Downlading {name}\n")
@@ -197,7 +195,7 @@ def get_thread_contents(threads):
                         dwnl += len(chunk)
                         percentage = int(50 * dwnl / size)
                         draw_progress_bar(percentage, name, dwnl, size)
-                         
+
                 sleep(1)
 
             except KeyError:
@@ -209,13 +207,20 @@ def get_thread_contents(threads):
 
 def download_img():
     pass
+
+
 def draw_progress_bar(percentage, name, dwnl, size):
-    sys.stdout.write("\r[%s%s] %s %d b/%d b " % ('█' * percentage, ' ' * (50 - percentage), name, dwnl, size))
+
+    sys.stdout.write(
+        "\r[%s%s] %s %d b/%d b "
+        % ("█" * percentage, " " * (50 - percentage), name, dwnl, size)
+    )
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Aborting!")
+        print("\nAborting!")
         exit(130)
