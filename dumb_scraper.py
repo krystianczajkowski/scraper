@@ -196,8 +196,8 @@ def get_thread_contents(threads):
                         fi.write(chunk)
                         dwnl += len(chunk)
                         percentage = int(50 * dwnl / size)
-                        sys.stdout.write("\r[%s%s] %d/%d" % ('█' * percentage, ' ' * (50 - percentage), dwnl, size))
-                        sys.stdout.flush()
+                        draw_progress_bar(percentage, name, dwnl, size)
+                         
                 sleep(1)
 
             except KeyError:
@@ -209,8 +209,9 @@ def get_thread_contents(threads):
 
 def download_img():
     pass
-def draw_bar():
-    pass
+def draw_progress_bar(percentage, name, dwnl, size):
+    sys.stdout.write("\r[%s%s] %s %d b/%d b " % ('█' * percentage, ' ' * (50 - percentage), name, dwnl, size))
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     try:
