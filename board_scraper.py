@@ -93,7 +93,6 @@ def validate_input():
     if len(sys.argv) != 2:
         exit(f"Usage {sys.argv[0]} [board name]")
     elif sys.argv[1].lower() not in board_list:
-        # didn't bother trying to google how to make this one line instead of three
         print("Board not found!\nAvailable boards:")
         print(*board_list)
         exit(1)
@@ -143,28 +142,18 @@ def get_thread_no(filename):
         ]
 
     print(len(to_save), "threads found")
-    # TODO istead of saving this to a file just return it
     return to_save
-    # TODO make this a generator?
-
-    # output = f"threads_cleaned_{str(date.today())}.txt"
-
-    # with open(output, "w") as f:
-    #     for i, e in enumerate(to_save):
-    #         if i == len(to_save) - 1:
-    #             f.write(str(e))
-    #         else:
-    #             f.write(f"{e}\n")
-
-    # return output
 
 
 def get_thread_contents(threads):
     """Downloads all images from a board and separates them by thread"""
-    t = Terminal()
+
+    # for colors in terminal
+    term = Terminal()
 
     for i, line in enumerate(threads):
-        r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/thread/{line}.json")
+        r = requests.get(
+            f"https://a.4cdn.org/{sys.argv[1]}/thread/{line}.json")
         data = r.json()
 
         sys.stdout.write(f"Thread {i+1}/{len(threads)}")
@@ -176,7 +165,7 @@ def get_thread_contents(threads):
             if not j:
                 change_dirs(post["semantic_url"])
                 print(
-                    f"{t.red}Replies: {post['replies']}\nImages: {post['images']}{t.normal}"
+                    f"{term.red}Replies: {post['replies']}\nImages: {post['images']}{term.normal}"
                 )
             try:
                 url = f"https://i.4cdn.org/{sys.argv[1]}/{post['tim']}{post['ext']}"
@@ -186,16 +175,9 @@ def get_thread_contents(threads):
                     continue
                 size = int(post["fsize"])
                 req = requests.get(url)
-                # download_img()
-                dwnl = 0
-                with open(name, "xb") as fi:
-                    for chunk in req.iter_content(chunk_size=4096):
-                        # sys.stdout.write(f"Downlading {name}\n")
-                        fi.write(chunk)
-                        dwnl += len(chunk)
-                        percentage = int(50 * dwnl / size)
-                        draw_progress_bar(percentage, name, dwnl, size)
-
+                
+                download_img(name, req, size)
+                
                 sleep(1)
 
             except KeyError:
@@ -205,12 +187,19 @@ def get_thread_contents(threads):
         os.chdir("..")
 
 
-def download_img():
-    pass
+def download_img(name, request, size):
+    dwnl = 0
+    with open(name, "xb") as fi:
+        print(f"Donloading {name}")
+        for chunk in request.iter_content(chunk_size=4096):
+            fi.write(chunk)
+            dwnl += len(chunk)
+            draw_progress_bar(name, dwnl, size)
 
 
-def draw_progress_bar(percentage, name, dwnl, size):
-
+def draw_progress_bar(name, dwnl, size):
+    """Draw a progress bar of a download"""
+    percentage = int(50 * dwnl / size)
     sys.stdout.write(
         "\r[%s%s] %s %d b/%d b "
         % ("█" * percentage, " " * (50 - percentage), name, dwnl, size)
