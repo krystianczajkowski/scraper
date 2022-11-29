@@ -112,8 +112,9 @@ def change_dirs(dir_name):
 
 
 def get_threads(filename, mode="x"):
-    """Grabs a json of the whole board."""
-    header = "If-Modified-Since"
+    """Grabs a json of the whole board and save it."""
+    #TODO if modified since
+    header = "If-Modified-Since:"
     print("Downloading list of threads")
     r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/threads.json")
     if r.ok:
@@ -122,15 +123,12 @@ def get_threads(filename, mode="x"):
                 f.write(json.dumps(r.json(), indent=4))
         except FileExistsError:
             print("List of threads already exists.")
-            # ui = input("Do you want to overwrite it? yes/no ")
-            # if ui == 'y' or ui == 'yes':
-            #     get_threads(FILE_IO, 'w')
     else:
         exit(f"Error {r.status_code} Something broke!")
 
 
 def get_thread_no(filename):
-    """Separates thread numbers into a separate txt file."""
+    """Separates thread numbers."""
 
     with open(filename) as f:
         data = json.load(f)
@@ -146,7 +144,7 @@ def get_thread_no(filename):
 
 
 def get_thread_contents(threads):
-    """Downloads all images from a board and separates them by thread"""
+    """Downloads all images from a board and separates them into folders by thread name"""
 
     # for colors in terminal
     term = Terminal()
@@ -183,11 +181,12 @@ def get_thread_contents(threads):
             except KeyError:
                 print("\nNo image found!")
                 continue
-            # print(url)
         os.chdir("..")
 
 
 def download_img(name, request, size):
+    """Download an image."""
+    
     dwnl = 0
     with open(name, "xb") as fi:
         print(f"Donloading {name}")
@@ -198,7 +197,8 @@ def download_img(name, request, size):
 
 
 def draw_progress_bar(name, dwnl, size):
-    """Draw a progress bar of a download"""
+    """Draw a progress bar of a download,"""
+
     percentage = int(50 * dwnl / size)
     sys.stdout.write(
         "\r[%s%s] %s %d b/%d b "
