@@ -2,7 +2,10 @@
     Image scraper for a mongolian basket weaving forum.
 
 """
-from time import sleep, time # sleep for 1 second after each request to avoid breaking api rules
+from time import (
+    sleep,
+    time,
+)  # sleep for 1 second after each request to avoid breaking api rules
 import sys
 import requests
 import os
@@ -107,35 +110,40 @@ def change_dirs(dir_name):
 
 def get_threads(timestamp=0):
     """Get a list of all threads from a board, check timestamps of all threads and update them."""
-    # TODO if modified since
     print("Downloading list of threads")
     r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/threads.json")
-    sleep(1) 
-    if r.ok:
-        try:
-            data = r.json()
-            # data[0]["threads"][0]["last_modified"]
+    sleep(1)
 
+    # code below needs retinking
+    # while thread not updated cont
+    # else download images
+    # repeat
+    
+    if r.ok:
+        data = r.json()
+        # data[0]["threads"][0]["last_modified"]
+        if os.path.exists("timestamp.txt"):
             with open("timestamp.txt", "r") as f:
                 old_timestamp = int(f.readline())
                 # TODO if timestamp now is older than 10 seconds check if threads were modified
                 if (result := timestamp - old_timestamp) > 10:
                     print(f"Last update: {result} seconds ago.")
                     f.close()
-                   
+
                     # loop through all posts and check if timestamps are newer than the one in file
                     for _, page in enumerate(data):
                         for _, post in enumerate(page["threads"]):
                             if post["last_modified"] > old_timestamp:
                                 old_timestamp = post["last_modified"]
-                    
-                    with open("timestamp.txt", 'w') as file:
+
+                    with open("timestamp.txt", "w") as file:
                         file.write(str(timestamp))
+        else:
+            with open("timestamp.txt", "w") as file:
+                file.write(str(timestamp))
 
-            return data
+        return data
 
-        except FileExistsError:
-            print("List of threads already exists.")
     else:
         exit(f"Error {r.status_code} Something broke!")
 
@@ -168,7 +176,7 @@ def get_thread_contents(threads):
         sys.stdout.write("\n")
         sys.stdout.flush()
         sleep(1.01)
-
+        
         for j, post in enumerate(data["posts"]):
             if not j:
                 change_dirs(post["semantic_url"])
@@ -190,7 +198,8 @@ def get_thread_contents(threads):
                 sleep(1)
 
             except KeyError:
-                print("\nNo image found!")
+                sys.stdout.write("\rNo image found!")
+                sys.stdout.flush()
                 continue
         os.chdir("..")
 
@@ -204,16 +213,16 @@ def download_img(name, request, size):
         for chunk in request.iter_content(chunk_size=4096):
             fi.write(chunk)
             dwnl += len(chunk)
-            draw_progress_bar(name, dwnl, size)
+            draw_progress_bar(dwnl, size)
 
 
-def draw_progress_bar(name, dwnl, size):
+def draw_progress_bar(dwnl, size):
     """Draw a progress bar."""
 
     percentage = int(50 * dwnl / size)
     sys.stdout.write(
-        "\r[%s%s] %s %d b/%d b "
-        % ("█" * percentage, " " * (50 - percentage), name, dwnl, size)
+        "\r[%s%s] %d b/%d b "
+        % ("█" * percentage, " " * (50 - percentage), dwnl, size)
     )
     sys.stdout.flush()
 
