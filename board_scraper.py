@@ -1,14 +1,10 @@
 """
-Board scraper for a mongolian basket weaving forum.
+Image scraper for a mongolian basket weaving forum.
 
 """
-
-from time import sleep
+from time import sleep, time # sleep for 1 second after each request to avoid breaking api rules
 import sys
-import json
-from click import progressbar
 import requests
-from datetime import date
 import os
 from blessed import Terminal
 
@@ -16,12 +12,9 @@ from blessed import Terminal
 def main():
 
     validate_input()
-    FILE_IO = sys.argv[1].upper() + " " + str(date.today()) + ".json"
+    timestamp = int(time())
     change_dirs(sys.argv[1])
-
-    get_threads(FILE_IO)
-    sleep(1.01)
-    get_thread_contents(get_thread_no(FILE_IO))
+    get_thread_contents(get_thread_no(get_threads(timestamp)))
 
 
 def validate_input():
@@ -108,36 +101,39 @@ def change_dirs(dir_name):
         print(f"Directory {dir_name} not found, creating...")
         os.system(f"mkdir {dir_name}")
         os.chdir(os.getcwd() + "/" + dir_name)
+    finally:
         print(f"Current working directory: {os.getcwd()}")
 
 
-def get_threads(filename, mode="x"):
-    """Grabs a json of the whole board and save it."""
-    #TODO if modified since
-    header = "If-Modified-Since:"
+def get_threads(timestamp):
+    """Get a list of all threads from a board, check timestamps of all threads and update them."""
+    # TODO if modified since
     print("Downloading list of threads")
     r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/threads.json")
+    sleep(1) 
     if r.ok:
         try:
-            with open(filename, mode) as f:
-                f.write(json.dumps(r.json(), indent=4))
+            with open("timestamp.txt", "w") as f:
+                # TODO if timestamp now is older than 10 seconds check if threads were modified
+                f.write(str(timestamp))
+            
+            return r.json()
+
         except FileExistsError:
             print("List of threads already exists.")
     else:
         exit(f"Error {r.status_code} Something broke!")
 
 
-def get_thread_no(filename):
+def get_thread_no(data):
     """Separates thread numbers."""
 
-    with open(filename) as f:
-        data = json.load(f)
-        to_save = [
-            e["threads"][j]["no"]
-            for _, e in enumerate(data)
-            for j, _ in enumerate(e["threads"])
-            if e["threads"][j]["replies"] > 1
-        ]
+    to_save = [
+        e["threads"][j]["no"]
+        for _, e in enumerate(data)
+        for j, _ in enumerate(e["threads"])
+        if e["threads"][j]["replies"] > 1
+    ]
 
     print(len(to_save), "threads found")
     return to_save
@@ -150,8 +146,7 @@ def get_thread_contents(threads):
     term = Terminal()
 
     for i, line in enumerate(threads):
-        r = requests.get(
-            f"https://a.4cdn.org/{sys.argv[1]}/thread/{line}.json")
+        r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/thread/{line}.json")
         data = r.json()
 
         sys.stdout.write(f"Thread {i+1}/{len(threads)}")
@@ -167,15 +162,16 @@ def get_thread_contents(threads):
                 )
             try:
                 url = f"https://i.4cdn.org/{sys.argv[1]}/{post['tim']}{post['ext']}"
-                name = post['filename'] + post['ext']
+                name = post["filename"] + post["ext"]
                 if os.path.exists(name):
-                    print(f"{name} already exists! skipping.")
+                    print(f"{name} exists skipping.")
                     continue
                 size = int(post["fsize"])
                 req = requests.get(url)
-                
+                print(term.green)
                 download_img(name, req, size)
-                
+                print(term.normal)
+
                 sleep(1)
 
             except KeyError:
@@ -186,7 +182,7 @@ def get_thread_contents(threads):
 
 def download_img(name, request, size):
     """Download an image."""
-    
+
     dwnl = 0
     with open(name, "xb") as fi:
         print(f"Donloading {name}")
@@ -197,7 +193,7 @@ def download_img(name, request, size):
 
 
 def draw_progress_bar(name, dwnl, size):
-    """Draw a progress bar of a download,"""
+    """Draw a progress bar."""
 
     percentage = int(50 * dwnl / size)
     sys.stdout.write(
