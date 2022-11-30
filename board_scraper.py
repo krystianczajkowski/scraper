@@ -1,5 +1,5 @@
 """
-Image scraper for a mongolian basket weaving forum.
+    Image scraper for a mongolian basket weaving forum.
 
 """
 from time import sleep, time # sleep for 1 second after each request to avoid breaking api rules
@@ -105,7 +105,7 @@ def change_dirs(dir_name):
         print(f"Current working directory: {os.getcwd()}")
 
 
-def get_threads(timestamp):
+def get_threads(timestamp=0):
     """Get a list of all threads from a board, check timestamps of all threads and update them."""
     # TODO if modified since
     print("Downloading list of threads")
@@ -113,11 +113,26 @@ def get_threads(timestamp):
     sleep(1) 
     if r.ok:
         try:
-            with open("timestamp.txt", "w") as f:
+            data = r.json()
+            # data[0]["threads"][0]["last_modified"]
+
+            with open("timestamp.txt", "r") as f:
+                old_timestamp = int(f.readline())
                 # TODO if timestamp now is older than 10 seconds check if threads were modified
-                f.write(str(timestamp))
-            
-            return r.json()
+                if (result := timestamp - old_timestamp) > 10:
+                    print(f"Last update: {result} seconds ago.")
+                    f.close()
+                   
+                    # loop through all posts and check if timestamps are newer than the one in file
+                    for _, page in enumerate(data):
+                        for _, post in enumerate(page["threads"]):
+                            if post["last_modified"] > old_timestamp:
+                                old_timestamp = post["last_modified"]
+                    
+                    with open("timestamp.txt", 'w') as file:
+                        file.write(str(timestamp))
+
+            return data
 
         except FileExistsError:
             print("List of threads already exists.")
