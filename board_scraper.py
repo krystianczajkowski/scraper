@@ -15,9 +15,47 @@ from blessed import Terminal
 def main():
 
     validate_input()
-    timestamp = int(time())
     change_dirs(sys.argv[1])
-    get_thread_contents(get_thread_no(get_threads(timestamp)))
+    get_thread_contents(get_thread_no(check_timestamp()))
+
+def check_timestamp():
+    """
+        Return a JSON of all threads on the board.
+        
+        Check timestamp in the file, if it's older than 10 seconds update it else wait till they pass.
+    """
+
+    timestamp = int(time())
+    if os.path.exists("timestamp.txt"):
+        with open("timestamp.txt", "r") as f:
+            old_timestamp = int(f.readline())
+            # if timestamp now is older than 10 seconds check if threads were modified
+            # data[0]["threads"][0]["last_modified"]
+            # loop through all posts and check if timestamps are newer than the one in file
+            if (result := timestamp - old_timestamp) > 10:
+                print(f"Last update: {result} seconds ago.")
+                f.close()
+
+                data = get_threads()
+                for _, page in enumerate(data):
+                    for _, post in enumerate(page["threads"]):
+                        if post["last_modified"] > old_timestamp:
+                           old_timestamp = post["last_modified"]
+            else:
+                print("Last update was less than 10 seconds ago!")
+                
+                for i in range(10-result,0,-1):
+                    sys.stdout.write(f'\rWait {i}')
+                    sys.stdout.flush()
+                    sleep(1)
+                sys.stdout.write('\n')
+                data = get_threads()
+
+    timestamp = max(timestamp, old_timestamp)
+    with open("timestamp.txt", "w") as file:
+        file.write(str(timestamp))
+    return data
+    
 
 
 def validate_input():
@@ -108,45 +146,20 @@ def change_dirs(dir_name):
         print(f"Current working directory: {os.getcwd()}")
 
 
-def get_threads(timestamp=0):
+def get_threads():
     """Get a list of all threads from a board, check timestamps of all threads and update them."""
-    print("Downloading list of threads")
+    
+    print("Getting a list of threads")
+    
     r = requests.get(f"https://a.4cdn.org/{sys.argv[1]}/threads.json")
+    
     sleep(1)
-
-    # code below needs retinking
-    # while thread not updated cont
-    # else download images
-    # repeat
     
     if r.ok:
-        data = r.json()
-        # data[0]["threads"][0]["last_modified"]
-        if os.path.exists("timestamp.txt"):
-            with open("timestamp.txt", "r") as f:
-                old_timestamp = int(f.readline())
-                # TODO if timestamp now is older than 10 seconds check if threads were modified
-                if (result := timestamp - old_timestamp) > 10:
-                    print(f"Last update: {result} seconds ago.")
-                    f.close()
-
-                    # loop through all posts and check if timestamps are newer than the one in file
-                    for _, page in enumerate(data):
-                        for _, post in enumerate(page["threads"]):
-                            if post["last_modified"] > old_timestamp:
-                                old_timestamp = post["last_modified"]
-
-                    with open("timestamp.txt", "w") as file:
-                        file.write(str(timestamp))
-        else:
-            with open("timestamp.txt", "w") as file:
-                file.write(str(timestamp))
-
-        return data
-
+        return r.json()
     else:
-        exit(f"Error {r.status_code} Something broke!")
-
+        print(f"Error {r.status_code} Something broke!")
+        exit(130)
 
 def get_thread_no(data):
     """Separates thread numbers."""
@@ -175,7 +188,7 @@ def get_thread_contents(threads):
         sys.stdout.write(f"Thread {i+1}/{len(threads)}")
         sys.stdout.write("\n")
         sys.stdout.flush()
-        sleep(1.01)
+        sleep(1)
         
         for j, post in enumerate(data["posts"]):
             if not j:
