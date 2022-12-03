@@ -24,7 +24,7 @@ def check_timestamp():
         
         Check timestamp in the file, if it's older than 10 seconds update it else wait till they pass.
     """
-
+    flag = False
     timestamp = int(time())
     if os.path.exists("timestamp.txt"):
         with open("timestamp.txt", "r") as f:
@@ -35,23 +35,28 @@ def check_timestamp():
             if (result := timestamp - old_timestamp) > 10:
                 print(f"Last update: {result} seconds ago.")
                 f.close()
-
-                data = get_threads()
-                for _, page in enumerate(data):
-                    for _, post in enumerate(page["threads"]):
-                        if post["last_modified"] > old_timestamp:
-                           old_timestamp = post["last_modified"]
-            else:
-                print("Last update was less than 10 seconds ago!")
+                flag = True
                 
+            else:
+                # following api rules
+                print("Last update was less than 10 seconds ago!")
                 for i in range(10-result,0,-1):
                     sys.stdout.write(f'\rWait {i}')
                     sys.stdout.flush()
                     sleep(1)
                 sys.stdout.write('\n')
-                data = get_threads()
+    else:
+        old_timestamp = 0
+    
+    if flag:
+        timestamp = max(timestamp, old_timestamp)
 
-    timestamp = max(timestamp, old_timestamp)
+    data = get_threads()
+    for _, page in enumerate(data):
+        for _, post in enumerate(page["threads"]):
+            if post["last_modified"] > old_timestamp:
+                old_timestamp = post["last_modified"]
+
     with open("timestamp.txt", "w") as file:
         file.write(str(timestamp))
     return data
@@ -211,8 +216,6 @@ def get_thread_contents(threads):
                 sleep(1)
 
             except KeyError:
-                sys.stdout.write("\rNo image found!")
-                sys.stdout.flush()
                 continue
         os.chdir("..")
 
@@ -234,8 +237,8 @@ def draw_progress_bar(dwnl, size):
 
     percentage = int(50 * dwnl / size)
     sys.stdout.write(
-        "\r[%s%s] %d b/%d b "
-        % ("█" * percentage, " " * (50 - percentage), dwnl, size)
+        "\r[%s%s] %dKB/%dKB "
+        % ("█" * percentage, " " * (50 - percentage), dwnl//1000, size//1000)
     )
     sys.stdout.flush()
 
