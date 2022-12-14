@@ -14,7 +14,7 @@ from blessed import Terminal
 
 def main():
 
-    validate_input()
+    validate_input(2)
     change_dirs(sys.argv[1])
     get_thread_contents(get_thread_no(check_timestamp()))
 
@@ -24,14 +24,13 @@ def check_timestamp():
         
         Check timestamp in the file, if it's older than 10 seconds update it else wait till they pass.
     """
+    
     flag = False
     timestamp = int(time())
     if os.path.exists("timestamp.txt"):
         with open("timestamp.txt", "r") as f:
             old_timestamp = int(f.readline())
             # if timestamp now is older than 10 seconds check if threads were modified
-            # data[0]["threads"][0]["last_modified"]
-            # loop through all posts and check if timestamps are newer than the one in file
             if (result := timestamp - old_timestamp) > 10:
                 print(f"Last update: {result} seconds ago.")
                 f.close()
@@ -63,7 +62,7 @@ def check_timestamp():
     
 
 
-def validate_input():
+def validate_input(args : int):
     """Check if program is run with enough command-line arguments."""
     board_list = (
         "a",
@@ -129,7 +128,7 @@ def validate_input():
         "soc",
         "s4s",
     )
-    if len(sys.argv) != 2:
+    if len(sys.argv) != args:
         exit(f"Usage {sys.argv[0]} [board name]")
     elif sys.argv[1].lower() not in board_list:
         print("Board not found!\nAvailable boards:")
@@ -237,7 +236,7 @@ def draw_progress_bar(dwnl, size):
 
     percentage = int(50 * dwnl / size)
     sys.stdout.write(
-        "\r[%s%s] %dKB/%dKB "
+        "\r[%s%s] %d/%d KB"
         % ("█" * percentage, " " * (50 - percentage), dwnl//1000, size//1000)
     )
     sys.stdout.flush()
