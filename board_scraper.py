@@ -166,7 +166,7 @@ def get_threads():
         exit(130)
 
 def get_thread_no(data):
-    """Separates thread numbers."""
+    """Separates thread numbers and returns them in a list."""
 
     to_save = [
         e["threads"][j]["no"]

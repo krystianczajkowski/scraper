@@ -1,3 +1,8 @@
 # scraper
 
-# Uses 4chan api to get all images from a board
+Using 4chan API and following [4chan API rules](https://github.com/4chan/4chan-API) to download images.
+
+--------
+## board_scraper
+
+Downloads all images from a specified board.
